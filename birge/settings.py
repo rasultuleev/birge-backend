@@ -25,7 +25,12 @@ SECRET_KEY = 'django-insecure-h#pfp-$8c8svzb2ye-t0c@%rc4#xp$9ea7v-a^2viz!u=+a=k!
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    '127.0.0.1',
+    'localhost',
+    '.onrender.com',
+    'birge-backend-2.onrender.com',
+]
 
 
 # Application definition
