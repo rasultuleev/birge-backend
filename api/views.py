@@ -91,3 +91,25 @@ def event_list(request):
         'skills': [skill.name for skill in e.skills.all()]
     } for e in events]
     return Response(data)
+@api_view(['PUT'])
+@permission_classes([IsAuthenticated])
+def update_profile(request):
+    user = request.user
+    profile = StudentProfile.objects.get(user=user)
+    data = request.data
+
+    if 'first_name' in data:
+        user.first_name = data['first_name']
+    if 'last_name' in data:
+        user.last_name = data['last_name']
+    user.save()
+
+    if 'middle_name' in data:
+        profile.middle_name = data['middle_name']
+    if 'university' in data:
+        profile.university = data['university']
+    if 'group_name' in data:
+        profile.group_name = data['group_name']
+    profile.save()
+
+    return Response({'message': 'Профиль обновлён'})
