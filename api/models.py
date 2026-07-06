@@ -4,12 +4,16 @@ from django.utils import timezone
 
 class StudentProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
+    first_name = models.CharField(max_length=100, blank=True)
+    last_name = models.CharField(max_length=100, blank=True)
+    middle_name = models.CharField(max_length=100, blank=True)   # опционально
+    university = models.CharField(max_length=200, blank=True)
     group_name = models.CharField(max_length=100, blank=True)
     total_hours = models.IntegerField(default=0)
     consent_employer = models.BooleanField(default=False)
 
     def __str__(self):
-        return f"{self.user.get_full_name()} - {self.group_name}"
+        return f"{self.last_name} {self.first_name}"
 
 class Skill(models.Model):
     name = models.CharField(max_length=100, unique=True)
