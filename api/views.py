@@ -91,6 +91,7 @@ def event_list(request):
         'skills': [skill.name for skill in e.skills.all()]
     } for e in events]
     return Response(data)
+
 @api_view(['PUT'])
 @permission_classes([IsAuthenticated])
 def update_profile(request):
