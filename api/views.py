@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from django.contrib.auth.models import User
 from .models import StudentProfile, Event, Participation, StudentSkill
 from django.db.models import Sum
+from rest_framework_simplejwt.tokens import RefreshToken
 
 @api_view(['GET'])
 def health_check(request):
@@ -15,7 +16,6 @@ def send_sms_code(request):
     phone = request.data.get('phone')
     if not phone:
         return Response({'error': 'Телефон обязателен'}, status=400)
-    # Заглушка: код всегда 1234
     return Response({'message': 'Код отправлен', 'code': '1234'})
 
 @api_view(['POST'])
@@ -29,7 +29,14 @@ def verify_code(request):
             user.set_unusable_password()
             user.save()
             StudentProfile.objects.get_or_create(user=user, defaults={'group_name': 'Новая группа'})
-        return Response({'success': True, 'user_id': user.id})
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+        return Response({
+            'success': True,
+            'user_id': user.id,
+            'access_token': access_token,
+            'refresh_token': str(refresh),
+        })
     return Response({'error': 'Неверный код'}, status=400)
 
 @api_view(['GET'])
