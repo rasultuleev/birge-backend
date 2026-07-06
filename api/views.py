@@ -49,7 +49,10 @@ def get_profile(request):
     events = Participation.objects.filter(student=profile, is_verified=True).select_related('event')[:10]
     events_data = [{'title': p.event.title, 'hours': p.hours_claimed, 'date': p.verified_at} for p in events]
     return Response({
-        'full_name': request.user.get_full_name() or request.user.username,
+        'first_name': request.user.first_name,
+        'last_name': request.user.last_name,
+        'middle_name': profile.middle_name,
+        'university': profile.university,
         'group_name': profile.group_name,
         'total_hours': total_hours,
         'skills': skills_data,
@@ -72,3 +75,19 @@ def register_event(request):
     if not created:
         return Response({'error': 'Вы уже зарегистрированы'}, status=400)
     return Response({'message': 'Зарегистрировано. Ждите подтверждения.'})
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def event_list(request):
+    events = Event.objects.filter(status='active')
+    data = [{
+        'id': e.id,
+        'title': e.title,
+        'description': e.description,
+        'date_start': e.date_start,
+        'date_end': e.date_end,
+        'code': e.code,
+        'max_hours': e.max_hours,
+        'skills': [skill.name for skill in e.skills.all()]
+    } for e in events]
+    return Response(data)
