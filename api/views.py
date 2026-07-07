@@ -129,3 +129,47 @@ def register_organization(request):
         'message': 'Заявка отправлена. Ожидайте подтверждения.',
         'request_id': org_request.id
     })
+import csv
+from io import TextIOWrapper
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def import_students(request):
+    if not request.user.is_staff:
+        return Response({'error': 'Только для администраторов'}, status=403)
+    
+    file = request.FILES.get('file')
+    if not file:
+        return Response({'error': 'Файл не загружен'}, status=400)
+    
+    reader = csv.DictReader(TextIOWrapper(file, encoding='utf-8'))
+    created_count = 0
+    errors = []
+    
+    for row in reader:
+        try:
+            username = row.get('email', '').split('@')[0]
+            user, created = User.objects.get_or_create(
+                username=username,
+                defaults={
+                    'email': row.get('email'),
+                    'first_name': row.get('first_name', ''),
+                    'last_name': row.get('last_name', '')
+                }
+            )
+            if created:
+                user.set_unusable_password()
+                user.save()
+                StudentProfile.objects.create(
+                    user=user,
+                    group_name=row.get('group', ''),
+                    university=row.get('university', '')
+                )
+                created_count += 1
+        except Exception as e:
+            errors.append(f"Ошибка в строке {reader.line_num}: {str(e)}")
+    
+    return Response({
+        'created': created_count,
+        'errors': errors
+    })
