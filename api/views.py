@@ -114,3 +114,18 @@ def update_profile(request):
     profile.save()
 
     return Response({'message': 'Профиль обновлён'})
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def register_organization(request):
+    data = request.data
+    org_request = OrganizationRequest.objects.create(
+        name=data.get('name'),
+        type=data.get('type'),
+        email=data.get('email'),
+        phone=data.get('phone'),
+        description=data.get('description', '')
+    )
+    return Response({
+        'message': 'Заявка отправлена. Ожидайте подтверждения.',
+        'request_id': org_request.id
+    })
