@@ -49,7 +49,10 @@ def get_profile(request):
     events = Participation.objects.filter(student=profile, is_verified=True).select_related('event')[:10]
     events_data = [{'title': p.event.title, 'hours': p.hours_claimed, 'date': p.verified_at} for p in events]
     return Response({
-        'full_name': request.user.get_full_name() or request.user.username,
+        'first_name': request.user.first_name,
+        'last_name': request.user.last_name,
+        'middle_name': profile.middle_name,
+        'university': profile.university,
         'group_name': profile.group_name,
         'total_hours': total_hours,
         'skills': skills_data,
@@ -72,3 +75,101 @@ def register_event(request):
     if not created:
         return Response({'error': 'Вы уже зарегистрированы'}, status=400)
     return Response({'message': 'Зарегистрировано. Ждите подтверждения.'})
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def event_list(request):
+    events = Event.objects.filter(status='active')
+    data = [{
+        'id': e.id,
+        'title': e.title,
+        'description': e.description,
+        'date_start': e.date_start,
+        'date_end': e.date_end,
+        'code': e.code,
+        'max_hours': e.max_hours,
+        'skills': [skill.name for skill in e.skills.all()]
+    } for e in events]
+    return Response(data)
+
+@api_view(['PUT'])
+@permission_classes([IsAuthenticated])
+def update_profile(request):
+    user = request.user
+    profile = StudentProfile.objects.get(user=user)
+    data = request.data
+
+    if 'first_name' in data:
+        user.first_name = data['first_name']
+    if 'last_name' in data:
+        user.last_name = data['last_name']
+    user.save()
+
+    if 'middle_name' in data:
+        profile.middle_name = data['middle_name']
+    if 'university' in data:
+        profile.university = data['university']
+    if 'group_name' in data:
+        profile.group_name = data['group_name']
+    profile.save()
+
+    return Response({'message': 'Профиль обновлён'})
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def register_organization(request):
+    data = request.data
+    org_request = OrganizationRequest.objects.create(
+        name=data.get('name'),
+        type=data.get('type'),
+        email=data.get('email'),
+        phone=data.get('phone'),
+        description=data.get('description', '')
+    )
+    return Response({
+        'message': 'Заявка отправлена. Ожидайте подтверждения.',
+        'request_id': org_request.id
+    })
+import csv
+from io import TextIOWrapper
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def import_students(request):
+    if not request.user.is_staff:
+        return Response({'error': 'Только для администраторов'}, status=403)
+    
+    file = request.FILES.get('file')
+    if not file:
+        return Response({'error': 'Файл не загружен'}, status=400)
+    
+    reader = csv.DictReader(TextIOWrapper(file, encoding='utf-8'))
+    created_count = 0
+    errors = []
+    
+    for row in reader:
+        try:
+            username = row.get('email', '').split('@')[0]
+            user, created = User.objects.get_or_create(
+                username=username,
+                defaults={
+                    'email': row.get('email'),
+                    'first_name': row.get('first_name', ''),
+                    'last_name': row.get('last_name', '')
+                }
+            )
+            if created:
+                user.set_unusable_password()
+                user.save()
+                StudentProfile.objects.create(
+                    user=user,
+                    group_name=row.get('group', ''),
+                    university=row.get('university', '')
+                )
+                created_count += 1
+        except Exception as e:
+            errors.append(f"Ошибка в строке {reader.line_num}: {str(e)}")
+    
+    return Response({
+        'created': created_count,
+        'errors': errors
+    })
