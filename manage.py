@@ -6,12 +6,16 @@ from django.core.management import call_command
 def main():
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'birge.settings')
 
-    # Создаём суперпользователя, если его нет
+    # Сначала инициализируем Django
+    import django
+    django.setup()
+
+    # Теперь можно работать с моделями
     from django.contrib.auth import get_user_model
     User = get_user_model()
-    if not User.objects.filter(username='admin2').exists():
-        User.objects.create_superuser('admin2', 'admin@example.com', 'admin123')
-        print("✅ Суперпользователь admin2 создан (пароль: admin123)")
+    if not User.objects.filter(username='admin').exists():
+        User.objects.create_superuser('admin', 'admin@example.com', 'admin123')
+        print("✅ Суперпользователь 'admin' создан (пароль: admin123)")
 
     try:
         from django.core.management import execute_from_command_line
@@ -20,7 +24,6 @@ def main():
             "Couldn't import Django"
         ) from exc
 
-    # Автоматически применяем миграции
     call_command('migrate', interactive=False)
     execute_from_command_line(sys.argv)
 
