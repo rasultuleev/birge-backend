@@ -78,3 +78,19 @@ class StudentSkill(models.Model):
 
     class Meta:
         unique_together = ('student', 'skill')
+class OrganizationRequest(models.Model):
+    STATUS_CHOICES = (
+        ('pending', 'На рассмотрении'),
+        ('approved', 'Одобрено'),
+        ('rejected', 'Отклонено'),
+    )
+    name = models.CharField(max_length=200)
+    type = models.CharField(max_length=50, choices=[('university', 'Университет'), ('ngo', 'НПО'), ('company', 'Компания')])
+    email = models.EmailField()
+    phone = models.CharField(max_length=20)
+    description = models.TextField(blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f"{self.name} ({self.status})"
