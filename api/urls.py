@@ -10,4 +10,5 @@ urlpatterns = [
     path('register-event/', views.register_event),
     path('events/', views.event_list),
     path('register-organization/', views.register_organization),
+    path('import-students/', views.import_students),
 ]
